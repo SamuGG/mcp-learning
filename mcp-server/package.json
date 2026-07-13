@@ -1,8 +1,11 @@
 {
   "name": "mcp-server",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "files": [ "build" ],
+  "bin": {
+    "mcp-server": "./build/index.js"
+  },
   "scripts": {
     "build": "bun build src/index.ts --outdir build --target bun && chmod 755 build/index.js"
   },
