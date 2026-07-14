@@ -1,15 +1,11 @@
-# mcp-server
+# MCP Server
 
-To install dependencies:
+- Change current directory: `cd mcp-server`
+- First-time dependencies install: `bun install`
+- Build sources: `bun run build`
+- Run the MCP inspector for testing the server on your browser: `bunx @modelcontextprotocol/inspector bun --bun build/index.js`
+- Run the project: `bun run --bun build/index.js`
 
-```bash
-bun install
-```
+Notes:
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+- The MCP server doesn't need to be running for the MCP client to work.
