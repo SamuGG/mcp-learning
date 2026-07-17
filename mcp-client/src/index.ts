@@ -1,26 +1,19 @@
-import kleur from 'kleur'
-import ollama from 'ollama'
+import config from './main-configuration'
+import { AIChat } from './chat'
 
-const args = process.argv.slice(2)
-const modelName = args[0] || 'gemma3n:e4b'
+async function main() {
+    const settings = config.parseArgs()
+    const chat = new AIChat(settings)
 
-console.log(`Usage:
-  mcp-client <model-name>
-`)
-
-console.log(kleur.grey(`Ollama host: http://localhost:11434
-Model: ${modelName}
-`))
-
-const message = { role: 'user', content: 'Hello' }
-console.log('Message: ', message.content)
-
-const response = await ollama.chat({
-    model: modelName,
-    messages: [message],
-    stream: true,
-})
-
-for await (const chunk of response) {
-    process.stdout.write(kleur.yellow(chunk.message.content))
+    try {
+        await chat.initializeMCP()
+        await chat.chatLoop()
+    } catch (e) {
+        console.error('Error:', e)
+        process.exit(1)
+    } finally {
+        await chat.cleanup()
+    }
 }
+
+main()
