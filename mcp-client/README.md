@@ -1,15 +1,25 @@
-# mcp-client
+# MCP Client
 
-To install dependencies:
+## Terminal 1 - Ollama server
 
-```bash
-bun install
-```
+- Start Ollama app
+- First-time model download: `ollama pull qwen3.5:4b`
+- Stop Ollama by closing the app
 
-To run:
+### Models
 
-```bash
-bun run index.ts
-```
+- [Ollama models](https://ollama.com/search)
+- Remove model: `ollama rm qwen3.5:4b`
 
-This project was created using `bun init` in bun v1.3.14. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+### Testing
+
+- Test starting a chat: `ollama run llama3.2`
+- Test sending HTTP request: `curl -X POST http://127.0.0.1.11434/api/chat -H "Content-Type: application/json" -d '{ "model": "llama3.2", "messages": [ { "role": "user", "content": "Hello" }] }'`
+
+## Terminal 2 - MCP client
+
+- Change current directory: `cd mcp-client`
+- First-time dependencies install: `bun install`
+- Build sources: `bun run build`
+- Run the project: `bun run --bun build/index.js "${PWD%/*}/mcp-server/build/index.js"`
+- When the chat starts, send prompts or type `/help` for invoking implemented commands
