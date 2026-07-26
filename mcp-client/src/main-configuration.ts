@@ -2,14 +2,14 @@ import { parseArgs } from 'util'
 import logger from './main-logger'
 
 export interface Settings {
-    ollamaHost: string
-    ollamaModel: string
+    mlxEndpoint: string
+    mlxModel: string
     serverScriptPath: string
 }
 
 export default {
     parseArgs: function (): Settings {
-        let values: { help?: boolean; host?: string; model?: string }
+        let values: { help?: boolean; endpoint?: string; model?: string }
         let positionals: string[]
 
         try {
@@ -20,15 +20,15 @@ export default {
                         type: 'boolean',
                         default: false
                     },
-                    host: {
+                    endpoint: {
                         type: 'string',
-                        short: 'h',
-                        default: 'http://localhost:11434',
+                        short: 'e',
+                        default: 'http://localhost:8080/v1',
                     },
                     model: {
                         type: 'string',
                         short: 'm',
-                        default: 'qwen3.5:4b',
+                        default: 'mlx-community/Qwen3.5-4B-8bit',
                     }
                 },
                 strict: true,
@@ -50,8 +50,8 @@ export default {
         }
 
         return {
-            ollamaHost: values.host!,
-            ollamaModel: values.model!,
+            mlxEndpoint: values.endpoint!,
+            mlxModel: values.model!,
             serverScriptPath: positionals[0]
         }
     }

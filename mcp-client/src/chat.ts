@@ -1,8 +1,8 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import type { Prompt } from '@modelcontextprotocol/sdk/types'
-import type { Message, Tool } from 'ollama'
-import { Ollama } from 'ollama'
+import OpenAI from 'openai'
+import type { ChatCompletionFunctionTool } from 'openai/resources/chat/completions'
 import type { CompleterResult } from 'readline'
 import readline from 'readline/promises'
 import logger from './chat-logger'
@@ -11,17 +11,17 @@ import type { Settings } from './main-configuration'
 
 export class AIChat {
     private readonly settings: Settings
-    private readonly ollama: Ollama
+    private readonly chatClient: OpenAI
     private readonly clientInfo: NameVersionValue = { name: 'starwars-cli', version: '1.0.0' }
     private mcpClient: Client | null = null
     private transport: StdioClientTransport | null = null
-    private serverTools: Tool[] = []
+    private serverTools: ChatCompletionFunctionTool[] = []
     private serverPrompts: Prompt[] = []
-    private messages: Message[] = []
+    private messages: OpenAI.Chat.ChatCompletionMessageParam[] = []
 
     constructor(settings: Settings) {
         this.settings = settings
-        this.ollama = new Ollama({ host: settings.ollamaHost })
+        this.chatClient = new OpenAI({ baseURL: settings.mlxEndpoint, apiKey: 'dummy' })
         logger.logWelcome()
     }
 
@@ -55,11 +55,11 @@ export class AIChat {
         }
     }
 
-    private async getServerTools(client: Client) {
+    private async getServerTools(client: Client): Promise<ChatCompletionFunctionTool[]> {
         const toolsResult = await client.listTools()
 
         return toolsResult.tools.map((tool) => ({
-            type: 'function',
+            type: 'function' as const,
             function: {
                 name: tool.name,
                 description: tool.description,
@@ -124,7 +124,7 @@ export class AIChat {
                         logger.logCommands()
                         break
                     case completions[1]:
-                        await this.logOllamaModels()
+                        await this.logMLXModels()
                         break
                     case completions[2]:
                         this.logServerTools()
@@ -144,59 +144,78 @@ export class AIChat {
         }
     }
 
-    private async processMessage(userMessage: Message, rl: readline.Interface) {
+    private async processMessage(userMessage: OpenAI.Chat.ChatCompletionUserMessageParam, rl: readline.Interface) {
         this.messages.push(userMessage)
 
         while (true) {
             rl.pause()
 
-            const response = await this.ollama.chat({
-                model: this.settings.ollamaModel,
+            const stream = await this.chatClient.chat.completions.create({
+                model: this.settings.mlxModel,
                 messages: this.messages,
                 stream: true,
-                tools: this.serverTools,
+                tools: this.serverTools.length > 0 ? this.serverTools : undefined,
             })
 
-            let assistantMessage: Message = {
-                role: 'assistant',
-                content: '',
-            }
+            // Build the response content and tool calls chunk by chunk below
+            let assistantContent = ''
+            const toolCalls: { id: string; type: string; function: { name: string; arguments: string } }[] = []
 
             // Stream output
-            for await (const chunk of response) {
-                if (chunk.message.content) {
-                    logger.logAssistantMessage(rl, chunk.message.content)
-                    rl.pause()
-                    assistantMessage.content += chunk.message.content
+            for await (const chunk of stream) {
+                const delta = chunk.choices[0]?.delta
+                rl.pause()
+
+                if (delta?.content) {
+                    logger.logAssistantMessage(rl, delta.content)
+                    assistantContent += delta.content
                 }
 
                 // Some chunks may include tool calls
-                if (chunk.message.tool_calls) {
-                    assistantMessage.tool_calls ??= []
-                    assistantMessage.tool_calls.push(...chunk.message.tool_calls)
+                if (delta?.tool_calls) {
+                    for (const tc of delta.tool_calls) {
+                        const index = tc.index
+                        if (!toolCalls[index as number]) {
+                            toolCalls[index as number] = { id: '', type: 'function', function: { name: '', arguments: '' } }
+                        }
+                        const entry = toolCalls[index as number]!
+                        if (tc.id) entry.id = tc.id
+                        if (tc.function?.name) entry.function.name += tc.function.name
+                        if (tc.function?.arguments) entry.function.arguments += tc.function.arguments
+                    }
                 }
             }
 
             logger.logNewLine(rl)
-            this.messages.push(assistantMessage)
+            this.messages.push({
+                role: 'assistant',
+                content: assistantContent,
+                tool_calls: toolCalls.length > 0
+                    ? toolCalls.map((call) => ({
+                        id: call.id,
+                        type: 'function' as const,
+                        function: { name: call.function.name, arguments: call.function.arguments },
+                    }))
+                    : undefined,
+            })
 
             // Finished normally
-            if (!assistantMessage.tool_calls?.length) {
+            if (!toolCalls.length) {
                 break
             }
 
             // Execute requested tools
-            for (const call of assistantMessage.tool_calls) {
+            for (const call of toolCalls) {
                 logger.logToolCall(rl, call.function.name)
 
                 const result = await this.mcpClient!.callTool({
                     name: call.function.name,
-                    arguments: call.function.arguments,
+                    arguments: JSON.parse(call.function.arguments),
                 })
 
                 this.messages.push({
                     role: 'tool',
-                    tool_name: call.function.name,
+                    tool_call_id: call.id,
                     content: JSON.stringify(result),
                 })
             }
@@ -249,7 +268,7 @@ export class AIChat {
         return this.getServerPromptAsUserMessage(serverPrompt.name, definedPromptArgs, rl)
     }
 
-    private async getServerPromptAsUserMessage(name: string, promptArgs: Record<string, string> | undefined, rl: readline.Interface) {
+    private async getServerPromptAsUserMessage(name: string, promptArgs: Record<string, string> | undefined, rl: readline.Interface): Promise<OpenAI.Chat.ChatCompletionUserMessageParam | undefined> {
         const getPromptResult = await this.mcpClient!.getPrompt({ name: name, arguments: promptArgs })
         const firstTextMessage = getPromptResult.messages.find((m) => m.content.type === 'text') as { role: string, content: { text: string } } | undefined
 
@@ -259,16 +278,15 @@ export class AIChat {
         logger.logServerPrompt(rl, firstTextMessage.content.text)
 
         return {
-            role: firstTextMessage.role,
+            role: 'user',
             content: firstTextMessage.content.text
         }
     }
 
-    private async logOllamaModels() {
-        const versionResponse = await this.ollama.version()
-        const listResponse = await this.ollama.list()
-        const availableModels = listResponse.models.map((model) => model.name)
-        logger.logOllamaModels(versionResponse.version, availableModels, this.settings.ollamaModel)
+    private async logMLXModels() {
+        const models = await this.chatClient.models.list()
+        const availableModels = models.data.map((model) => model.id)
+        logger.logMLXModels(availableModels, this.settings.mlxModel)
     }
 
     private logServerTools() {

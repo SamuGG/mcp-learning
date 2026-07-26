@@ -7,7 +7,7 @@
       "dependencies": {
         "@modelcontextprotocol/sdk": "latest",
         "kleur": "latest",
-        "ollama": "latest",
+        "openai": "latest",
       },
       "devDependencies": {
         "@types/bun": "latest",
