@@ -1,20 +1,28 @@
 # MCP Client
 
-## Terminal 1 - Ollama server
+## Terminal 1 - MLX LM server
 
-- Start Ollama app
-- First-time model download: `ollama pull qwen3.5:4b`
-- Stop Ollama by closing the app
+- Create an empty Python environment: `mkdir mlx && cd $_ && python3 -m venv myenv`
+- Enter Python environment: `source myenv/bin/activate`
+- First-time MLX LM install: `pip install mlx-lm`
+- First-time MLX_LM HTTP server start (downloads model): `mlx_lm.server --model mlx-community/Qwen3.5-4B-8bit`
+- Subsequent MLX_LM HTTP server start: `mlx_lm.server`
 
-### Models
+---
 
-- [Ollama models](https://ollama.com/search)
-- Remove model: `ollama rm qwen3.5:4b`
+- Stop the server with Ctl+C
+- Exit the Python environment: `deactivate`
 
-### Testing
+### MLX Models
 
-- Test starting a chat: `ollama run llama3.2`
-- Test sending HTTP request: `curl -X POST http://127.0.0.1.11434/api/chat -H "Content-Type: application/json" -d '{ "model": "llama3.2", "messages": [ { "role": "user", "content": "Hello" }] }'`
+- Hugging Face [MLX community](https://huggingface.co/mlx-community)
+- Remove model: `rm -rf ~/cache/huiggingface/hub/models--mlx-community--Qwen3.5-4B-8bit`
+
+### MLX_LM Testing
+
+- Test the server sending a prompt: `mlx_lm.generate --prompt "Hello"`
+- Test starting a chat: `mlx_lm.chat --model mlx-community/Qwen3.5-4B-8bit`
+- Test sending HTTP request: `curl -X POST http://127.0.0.1.8080/v1/chat/completions -H "Content-Type: application/json" -d '{ "model": "default_model", "messages": [ { "role": "user", "content": "Hello" }] }'`
 
 ## Terminal 2 - MCP client
 
