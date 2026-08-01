@@ -56,7 +56,11 @@ export function filterMoviesByTitle(title: string): Movie[] {
 }
 
 export function filterMoviesByCharacter(name: string): Movie[] {
-    const charactersFound = characters.filter((c) => c.name.toLowerCase().includes(name.toLowerCase()))
+    const normalizedName = name.trim().toLowerCase()
+    if (normalizedName.length === 0)
+        return []
+
+    const charactersFound = characters.filter((c) => c.name.toLowerCase().includes(normalizedName))
 
     if (charactersFound.length === 0)
         return []
