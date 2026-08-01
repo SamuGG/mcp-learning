@@ -27,8 +27,8 @@ export default {
     logOllamaModels: function (version: string, models: string[], selectedModel: string) {
         console.log(kleur.cyan('Ollama:'))
         console.log(kleur.grey(`  version ${version}`))
-        console.log(kleur.cyan('Available models:'))
-        models.sort().forEach((model) => {
+        console.log(kleur.cyan('Available models:'));
+        [...models].sort().forEach((model) => {
             console.log(`[${model === selectedModel ? 'X' : ' '}] ${kleur.grey(model)}`)
         })
         printBlankLine()
