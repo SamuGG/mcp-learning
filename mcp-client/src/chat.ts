@@ -17,6 +17,7 @@ export class AIChat {
     private transport: StdioClientTransport | null = null
     private serverTools: Tool[] = []
     private serverPrompts: Prompt[] = []
+    private messages: Message[] = []
 
     constructor(settings: Settings) {
         this.settings = settings
@@ -62,7 +63,7 @@ export class AIChat {
             function: {
                 name: tool.name,
                 description: tool.description,
-                input_schema: tool.inputSchema,
+                parameters: tool.inputSchema,
             }
         }))
     }
@@ -144,14 +145,14 @@ export class AIChat {
     }
 
     private async processMessage(userMessage: Message, rl: readline.Interface) {
-        const messages: Message[] = [userMessage]
+        this.messages.push(userMessage)
 
         while (true) {
             rl.pause()
 
             const response = await this.ollama.chat({
                 model: this.settings.ollamaModel,
-                messages,
+                messages: this.messages,
                 stream: true,
                 tools: this.serverTools,
             })
@@ -177,7 +178,7 @@ export class AIChat {
             }
 
             logger.logNewLine(rl)
-            messages.push(assistantMessage)
+            this.messages.push(assistantMessage)
 
             // Finished normally
             if (!assistantMessage.tool_calls?.length) {
@@ -193,7 +194,7 @@ export class AIChat {
                     arguments: call.function.arguments,
                 })
 
-                messages.push({
+                this.messages.push({
                     role: 'tool',
                     tool_name: call.function.name,
                     content: JSON.stringify(result),
