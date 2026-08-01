@@ -48,7 +48,7 @@ const movies: Movie[] = [
 ]
 
 export function getAllMovies(): Movie[] {
-    return movies
+    return movies.map((movie) => ({ ...movie, characters: [...movie.characters] }))
 }
 
 export function filterMoviesByTitle(title: string): Movie[] {
