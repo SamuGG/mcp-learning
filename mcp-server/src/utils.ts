@@ -1,4 +1,5 @@
-import type { MovieDetails } from "./data.js"
+import type { Movie, MovieDetails } from "./data.js"
+import { characterName } from "./data.js"
 
 const ratingDescriptions: Record<number, string> = {
     1: 'Poor',
@@ -14,4 +15,15 @@ export function ratingDescription(rating: number): string {
 
 export function formatMovieDetails(movie: MovieDetails): string {
     return `${movie.title} (${movie.releaseYear}) - Rating: ${movie.ratingDescription} (${movie.rating}/5) - Cast: ${movie.characters.join(', ')}`
+}
+
+export function toMovieDetails(movie: Movie): MovieDetails {
+    return {
+        title: movie.title,
+        releaseYear: movie.releaseYear,
+        episode: movie.episode,
+        rating: movie.rating,
+        ratingDescription: ratingDescription(movie.rating),
+        characters: movie.characters.map((id) => characterName(id))
+    }
 }

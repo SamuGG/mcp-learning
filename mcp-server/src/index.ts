@@ -2,8 +2,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 import type { Movie, MovieDetails } from './data.js'
-import { getAllMovies, filterMoviesByTitle, filterMoviesByCharacter, characterName } from './data.js'
-import { formatMovieDetails, ratingDescription } from './utils.js'
+import { getAllMovies, filterMoviesByTitle, filterMoviesByCharacter } from './data.js'
+import { formatMovieDetails, toMovieDetails } from './utils.js'
 
 const serverInfo = {
     name: 'star-wars',
@@ -18,14 +18,7 @@ server.registerTool(
         description: 'Get a list of Star Wars movies'
     },
     async () => {
-        const movies: MovieDetails[] = getAllMovies().map((movie) => ({
-            title: movie.title,
-            releaseYear: movie.releaseYear,
-            episode: movie.episode,
-            rating: movie.rating,
-            ratingDescription: ratingDescription(movie.rating),
-            characters: movie.characters.map((id) => characterName(id))
-        }))
+        const movies: MovieDetails[] = getAllMovies().map(toMovieDetails)
 
         return {
             content: [
@@ -58,14 +51,7 @@ server.registerTool(
             foundMovies = title ? foundMovies.filter((movie) => characterMovies.includes(movie)) : characterMovies
         }
 
-        const details: MovieDetails[] = foundMovies.map((movie) => ({
-            title: movie.title,
-            releaseYear: movie.releaseYear,
-            episode: movie.episode,
-            rating: movie.rating,
-            ratingDescription: ratingDescription(movie.rating),
-            characters: movie.characters.map((id) => characterName(id))
-        }))
+        const details: MovieDetails[] = foundMovies.map(toMovieDetails)
 
         return {
             content: [
