@@ -41,6 +41,9 @@ server.registerTool(
         }
     },
     async ({ title, character }) => {
+        if (!title && !character)
+            throw new Error('At least one of title or character must be provided.')
+
         let foundMovies: Movie[] = []
 
         if (title)
