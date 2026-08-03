@@ -1,5 +1,5 @@
-import type { Movie, MovieDetails } from "./data.js"
-import { characterName } from "./data.js"
+import type { Movie, MovieDetails } from "./repository.js"
+import { characterName } from "./repository.js"
 
 const ratingDescriptions: Record<number, string> = {
     1: 'Poor',

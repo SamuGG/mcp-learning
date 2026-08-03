@@ -1,8 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
-import type { Movie, MovieDetails } from './data.js'
-import { getAllMovies, filterMoviesByTitle, filterMoviesByCharacter } from './data.js'
+import type { Movie, MovieDetails } from './repository.js'
+import { getAllMovies, filterMoviesByTitle, filterMoviesByCharacter } from './repository.js'
 import { formatMovieDetails, toMovieDetails } from './utils.js'
 
 const serverInfo = {
